@@ -18,8 +18,17 @@ const CONFIG = {
 
   // ---- WhatsApp da equipe (apenas números, com DDI e DDD) ----
   // Exemplo: "5532999999999"
-  WHATSAPP_NUMBER: "",
+  WHATSAPP_NUMBER: "5532987026136",
   WHATSAPP_MESSAGE: "Olá! Tenho um bar em Juiz de Fora e gostaria de saber como participar gratuitamente do Clube do Buteco.",
+
+  // ---- Envio do cadastro direto pelo WhatsApp ----
+  // Não existe API gratuita para o WhatsApp receber automaticamente os dados
+  // do formulário. Por isso, ao concluir o cadastro, o site abre o WhatsApp
+  // do número acima com um resumo pronto — o dono do bar só precisa clicar
+  // em "enviar" dentro do WhatsApp. Defina como false para desativar esse
+  // redirecionamento automático (por exemplo, se preferir usar apenas o
+  // WEBHOOK_URL abaixo para receber os dados por outro canal).
+  SEND_TO_WHATSAPP_ON_SUBMIT: true,
 
   // ---- Webhook para receber os cadastros do formulário ----
   // Compatível com Make, Zapier, RD Station, HubSpot, Pipedrive,
@@ -416,6 +425,38 @@ const FormWizard = {
     this.form.addEventListener("submit", (e) => this.handleSubmit(e));
   },
 
+  // Monta um resumo legível do cadastro para enviar pelo WhatsApp.
+  buildWhatsAppSummary(payload) {
+    const linhas = [
+      "Novo cadastro — Clube do Buteco",
+      "",
+      `Estabelecimento: ${payload.nome_estabelecimento || "-"}`,
+      `Tipo: ${payload.tipo_estabelecimento || "-"}`,
+      `Proprietário: ${payload.nome_proprietario || "-"}`,
+      `Responsável pelo cadastro: ${payload.nome_responsavel || "-"}`,
+      `WhatsApp: ${payload.whatsapp || "-"}`,
+      `E-mail: ${payload.email || "-"}`,
+      `Instagram: ${payload.instagram || "-"}`,
+      `Endereço: ${payload.endereco || "-"}, ${payload.bairro || "-"}, ${payload.cidade || "-"}`,
+      "",
+      `Status da promoção: ${payload.status_promocao || "-"}`,
+      `Promoção: ${payload.nome_promocao || "-"}`,
+      `Descrição: ${payload.descricao_promocao || "-"}`,
+      "",
+      "Enviado pelo formulário do site."
+    ];
+    return linhas.join("\n");
+  },
+
+  // Abre o WhatsApp com o resumo do cadastro pronto para envio.
+  openWhatsAppWithSummary(payload) {
+    const number = CONFIG.WHATSAPP_NUMBER.replace(/\D/g, "");
+    if (!number) return;
+    const text = this.buildWhatsAppSummary(payload);
+    const url = `https://wa.me/${number}?text=${encodeURIComponent(text)}`;
+    window.open(url, "_blank", "noopener");
+  },
+
   async handleSubmit(e) {
     e.preventDefault();
 
@@ -449,6 +490,11 @@ const FormWizard = {
         // MODO DEMONSTRAÇÃO — sem webhook configurado
         console.log("Clube do Buteco — modo demonstração. JSON do cadastro:", payload);
       }
+
+      if (CONFIG.SEND_TO_WHATSAPP_ON_SUBMIT && CONFIG.WHATSAPP_NUMBER) {
+        this.openWhatsAppWithSummary(payload);
+      }
+
       sessionStorage.setItem(FORM_SENT_KEY, "true");
       this.clearStorage();
       this.showSuccess();
@@ -464,6 +510,12 @@ const FormWizard = {
     this.form.hidden = true;
     $("#form-progress").hidden = true;
     $("#success-panel").hidden = false;
+
+    const note = $("#whatsapp-redirect-note");
+    if (note) {
+      note.hidden = !(CONFIG.SEND_TO_WHATSAPP_ON_SUBMIT && CONFIG.WHATSAPP_NUMBER);
+    }
+
     $("#success-panel").scrollIntoView({ behavior: "smooth", block: "start" });
   }
 };

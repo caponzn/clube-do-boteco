@@ -29,8 +29,9 @@ Tudo o que muda com frequência está centralizado no topo de `script.js`, no ob
 | O que editar | Onde | Campo |
 |---|---|---|
 | Datas da campanha (início/fim) | `script.js` | `CONFIG.CAMPAIGN_START_DATE`, `CONFIG.CAMPAIGN_END_DATE` |
-| Número de WhatsApp da equipe | `script.js` | `CONFIG.WHATSAPP_NUMBER` (só números, com DDI+DDD, ex: `"5532999999999"`) |
-| Mensagem automática do WhatsApp | `script.js` | `CONFIG.WHATSAPP_MESSAGE` |
+| Número de WhatsApp da equipe | `script.js` | `CONFIG.WHATSAPP_NUMBER` (só números, com DDI+DDD, ex: `"5532999999999"`) — já configurado com `5532987026136` |
+| Mensagem automática do WhatsApp (botão flutuante e tela de sucesso) | `script.js` | `CONFIG.WHATSAPP_MESSAGE` |
+| Enviar o cadastro do formulário direto pelo WhatsApp | `script.js` | `CONFIG.SEND_TO_WHATSAPP_ON_SUBMIT` (`true`/`false`) |
 | URL do webhook (Make, Zapier, RD Station, HubSpot, Pipedrive, Google Sheets, API própria) | `script.js` | `CONFIG.WEBHOOK_URL` |
 | Influenciador/embaixador da campanha | `script.js` | `CONFIG.INFLUENCER` (defina `active: true` e preencha nome, Instagram, bio, foto e vídeo) |
 | Especialista em cachaças | `script.js` | `CONFIG.SPECIALIST` (defina `active: true` e preencha os dados) |
@@ -42,7 +43,9 @@ Textos de todas as seções (títulos, parágrafos, promoções, FAQ, calendári
 As datas são exibidas por extenso e a duração em dias é calculada automaticamente. Basta alterar `CAMPAIGN_START_DATE` e `CAMPAIGN_END_DATE` em `script.js` (formato `AAAA-MM-DD`).
 
 ### WhatsApp
-Enquanto `WHATSAPP_NUMBER` estiver vazio, os botões de WhatsApp (flutuante e da tela de sucesso) ficam inativos (`href="#"`). Preencha o número para ativá-los.
+Enquanto `WHATSAPP_NUMBER` estiver vazio, os botões de WhatsApp (flutuante e da tela de sucesso) ficam inativos (`href="#"`). O número já está preenchido com `5532987026136`.
+
+Como não existe API gratuita para o WhatsApp receber dados automaticamente, ao concluir o formulário (com `SEND_TO_WHATSAPP_ON_SUBMIT: true`) o site abre uma aba do WhatsApp já com um resumo do cadastro (nome do bar, contato, promoção etc.) pronto no campo de mensagem — quem preencheu só precisa clicar em enviar. Se preferir receber os cadastros só por outro canal (ex: planilha via webhook), defina `SEND_TO_WHATSAPP_ON_SUBMIT: false`.
 
 ### Webhook / integração
 Se `WEBHOOK_URL` estiver vazio, o formulário roda em **modo demonstração**: valida tudo normalmente, simula o envio, mostra a tela de sucesso e imprime o JSON completo do cadastro no console do navegador (F12 → Console) — nenhum dado é perdido. Quando `WEBHOOK_URL` for preenchida, o formulário faz um `POST` com o JSON do cadastro (incluindo UTMs, data/hora e nomes dos arquivos anexados) para essa URL. Não insira credenciais/segredos diretamente no front-end — use o webhook apenas como porta de entrada para sua automação (Make, Zapier etc.), que deve tratar autenticação do lado do servidor.
