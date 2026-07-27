@@ -33,9 +33,20 @@ const CONFIG = {
   // ---- Webhook para receber os cadastros do formulário ----
   // Compatível com Make, Zapier, RD Station, HubSpot, Pipedrive,
   // Google Sheets (via App Script) ou API própria.
-  // Se estiver vazio, o formulário roda em MODO DEMONSTRAÇÃO:
-  // simula o envio, mostra a tela de sucesso e registra o JSON no console.
+  // Se estiver vazio E o Google Forms abaixo também estiver vazio, o
+  // formulário roda em MODO DEMONSTRAÇÃO: simula o envio, mostra a tela
+  // de sucesso e registra o JSON no console.
   WEBHOOK_URL: "",
+
+  // ---- Google Forms como backend gratuito do formulário ----
+  // Envia os dados em segundo plano (sem sair do site) para o Google Forms
+  // "Credenciamento — Clube do Buteco". As respostas caem automaticamente
+  // na planilha do Google Sheets vinculada ao formulário.
+  // Para trocar de formulário no futuro: pegue a URL pública do formulário
+  // (algo como https://docs.google.com/forms/d/e/XXXXX/viewform), troque
+  // "viewform" por "formResponse" no fim, e gere novos IDs de campo com a
+  // função listarEntryIds() do arquivo criar-google-form.gs.
+  GOOGLE_FORM_ACTION_URL: "https://docs.google.com/forms/d/e/1FAIpQLScKCvBq1Ryd2dxotoKdCGKorD0ZckhoL1gF1tDr1zQVk9I2eg/formResponse",
 
   // ---- Influenciador / embaixador da campanha ----
   // Preencha apenas com informações reais e validadas.
@@ -99,6 +110,141 @@ function getUTMParams() {
     }
   });
   return utms;
+}
+
+/* ============================================================
+   2b. INTEGRAÇÃO COM GOOGLE FORMS
+   Mapeia cada campo do formulário do site (atributo "name" do HTML)
+   para o entry.XXXXXXX correspondente no Google Forms "Credenciamento
+   — Clube do Buteco". Gerado com a função listarEntryIds() do
+   arquivo criar-google-form.gs.
+   ============================================================ */
+
+// Campos de resposta única (texto, parágrafo, múltipla escolha)
+const GOOGLE_FORM_FIELD_MAP = {
+  nome_estabelecimento: "entry.1214260748",
+  nome_proprietario: "entry.365617123",
+  nome_responsavel: "entry.448295202",
+  whatsapp: "entry.1132640366",
+  telefone: "entry.397519054",
+  email: "entry.1793992244",
+  instagram: "entry.364506054",
+  cnpj: "entry.1871291339",
+  endereco: "entry.1522932826",
+  bairro: "entry.1374145540",
+  cidade: "entry.1428991678",
+  cep: "entry.339684751",
+  tipo_estabelecimento: "entry.685099654",
+
+  ano_fundacao: "entry.770284089",
+  ticket_medio: "entry.1126896051",
+  historia: "entry.1584833174",
+  dias_funcionamento: "entry.1371717384",
+  horarios: "entry.1103054494",
+  capacidade: "entry.1990593534",
+  principais_produtos: "entry.777002349",
+  prato_mais_vendido: "entry.2047595834",
+  bebida_mais_vendida: "entry.2126768310",
+  dias_menor_movimento: "entry.1401635964",
+  horarios_menor_movimento: "entry.657011841",
+
+  status_promocao: "entry.920886206",
+  nome_promocao: "entry.1573461428",
+  descricao_promocao: "entry.424864788",
+  produtos_participantes: "entry.380105695",
+  dias_validos: "entry.384557196",
+  horarios_validos: "entry.1187961751",
+  valor_minimo: "entry.741585885",
+  limite_cliente: "entry.2082318341",
+  regras_promocao: "entry.529425505",
+  restricoes_promocao: "entry.865860575",
+  prazo_validade: "entry.58425284",
+
+  melhor_dia_visita: "entry.1061111940",
+  melhor_horario_visita: "entry.1360137072"
+};
+
+// Perguntas de caixas de seleção (várias opções por pergunta).
+// Cada checkbox do site "empurra" o texto da opção correspondente
+// no Google Forms quando estiver marcado.
+const GOOGLE_FORM_CHECKBOX_GROUPS = [
+  {
+    entry: "entry.138430209", // Características do estabelecimento
+    options: {
+      possui_cachacas: "Possui cachaças",
+      musica_ao_vivo: "Possui música ao vivo",
+      area_externa: "Possui área externa",
+      tv_jogos: "Possui televisão para jogos",
+      espaco_grupos: "Possui espaço para grupos"
+    }
+  },
+  {
+    entry: "entry.1237607159", // Promoção exclusiva para usuários do Clube?
+    options: {
+      exclusiva_clube: "Sim, exclusiva para usuários do Clube do Buteco"
+    }
+  },
+  {
+    entry: "entry.204160588", // Conteúdo e participação
+    options: {
+      possui_logotipo: "Possui logotipo",
+      possui_fotos_profissionais: "Possui fotos profissionais",
+      deseja_visita_fotos: "Deseja receber visita para fotos",
+      autoriza_fotos: "Autoriza fotos no estabelecimento",
+      autoriza_video: "Autoriza gravação de vídeo",
+      quer_contar_historia: "Gostaria de contar a história do bar",
+      interesse_entrevista: "Interesse em entrevista",
+      interesse_radio: "Interesse em ação de rádio",
+      interesse_sorteio: "Interesse em sorteio",
+      interesse_cachaca: "Interesse em ação com marca de cachaça"
+    }
+  },
+  {
+    entry: "entry.1202026566", // Confirmações (etapa 5)
+    options: {
+      confirma_verdadeiras: "Confirmo que as informações são verdadeiras.",
+      autoriza_contato: "Autorizo o contato da equipe do O Seu Clube.",
+      ciente_gratuito: "Estou ciente de que o cadastro é gratuito.",
+      ciente_aprovacao: "Estou ciente de que a promoção deverá ser aprovada.",
+      ciente_termo: "Estou ciente de que será necessário assinar um termo de compromisso.",
+      compromisso_cumprir: "Comprometo-me a cumprir a promoção após sua publicação.",
+      autoriza_dados: "Autorizo o tratamento dos dados para análise do credenciamento.",
+      declara_regras_alcool: "Declaro que o estabelecimento cumpre as regras aplicáveis à comercialização de bebidas alcoólicas."
+    }
+  }
+];
+
+// Monta os parâmetros no formato que o Google Forms espera
+// (application/x-www-form-urlencoded, com entry.ID repetido para
+// cada opção marcada em perguntas de caixas de seleção).
+function buildGoogleFormParams(payload) {
+  const params = new URLSearchParams();
+
+  Object.entries(GOOGLE_FORM_FIELD_MAP).forEach(([field, entry]) => {
+    if (payload[field]) params.append(entry, payload[field]);
+  });
+
+  GOOGLE_FORM_CHECKBOX_GROUPS.forEach((group) => {
+    Object.entries(group.options).forEach(([field, label]) => {
+      if (payload[field]) params.append(group.entry, label);
+    });
+  });
+
+  return params;
+}
+
+// Envia o cadastro para o Google Forms em segundo plano. Como a
+// requisição usa mode "no-cors" (obrigatório para o domínio do Forms),
+// não é possível ler a resposta — o envio é "silencioso" por natureza.
+async function submitToGoogleForm(payload) {
+  if (!CONFIG.GOOGLE_FORM_ACTION_URL) return;
+  const params = buildGoogleFormParams(payload);
+  await fetch(CONFIG.GOOGLE_FORM_ACTION_URL, {
+    method: "POST",
+    mode: "no-cors",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: params.toString()
+  });
 }
 
 /* ============================================================
@@ -480,14 +626,24 @@ const FormWizard = {
     };
 
     try {
+      let salvouEmAlgumLugar = false;
+
+      if (CONFIG.GOOGLE_FORM_ACTION_URL) {
+        await submitToGoogleForm(payload);
+        salvouEmAlgumLugar = true;
+      }
+
       if (CONFIG.WEBHOOK_URL) {
         await fetch(CONFIG.WEBHOOK_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload)
         });
-      } else {
-        // MODO DEMONSTRAÇÃO — sem webhook configurado
+        salvouEmAlgumLugar = true;
+      }
+
+      if (!salvouEmAlgumLugar) {
+        // MODO DEMONSTRAÇÃO — sem Google Forms nem webhook configurados
         console.log("Clube do Buteco — modo demonstração. JSON do cadastro:", payload);
       }
 

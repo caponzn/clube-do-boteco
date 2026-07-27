@@ -32,7 +32,8 @@ Tudo o que muda com frequência está centralizado no topo de `script.js`, no ob
 | Número de WhatsApp da equipe | `script.js` | `CONFIG.WHATSAPP_NUMBER` (só números, com DDI+DDD, ex: `"5532999999999"`) — já configurado com `5532987026136` |
 | Mensagem automática do WhatsApp (botão flutuante e tela de sucesso) | `script.js` | `CONFIG.WHATSAPP_MESSAGE` |
 | Enviar o cadastro do formulário direto pelo WhatsApp | `script.js` | `CONFIG.SEND_TO_WHATSAPP_ON_SUBMIT` (`true`/`false`) |
-| URL do webhook (Make, Zapier, RD Station, HubSpot, Pipedrive, Google Sheets, API própria) | `script.js` | `CONFIG.WEBHOOK_URL` |
+| URL do Google Forms (backend gratuito, já conectado) | `script.js` | `CONFIG.GOOGLE_FORM_ACTION_URL` |
+| URL do webhook (Make, Zapier, RD Station, HubSpot, Pipedrive, API própria) | `script.js` | `CONFIG.WEBHOOK_URL` |
 | Influenciador/embaixador da campanha | `script.js` | `CONFIG.INFLUENCER` (defina `active: true` e preencha nome, Instagram, bio, foto e vídeo) |
 | Especialista em cachaças | `script.js` | `CONFIG.SPECIALIST` (defina `active: true` e preencha os dados) |
 | Cachaça oficial / patrocinador | `script.js` | `CONFIG.SPONSOR` (defina `confirmed: true` e `name` só após a parceria ser assinada; `showSection: false` oculta a seção inteira) |
@@ -47,8 +48,20 @@ Enquanto `WHATSAPP_NUMBER` estiver vazio, os botões de WhatsApp (flutuante e da
 
 Como não existe API gratuita para o WhatsApp receber dados automaticamente, ao concluir o formulário (com `SEND_TO_WHATSAPP_ON_SUBMIT: true`) o site abre uma aba do WhatsApp já com um resumo do cadastro (nome do bar, contato, promoção etc.) pronto no campo de mensagem — quem preencheu só precisa clicar em enviar. Se preferir receber os cadastros só por outro canal (ex: planilha via webhook), defina `SEND_TO_WHATSAPP_ON_SUBMIT: false`.
 
-### Webhook / integração
-Se `WEBHOOK_URL` estiver vazio, o formulário roda em **modo demonstração**: valida tudo normalmente, simula o envio, mostra a tela de sucesso e imprime o JSON completo do cadastro no console do navegador (F12 → Console) — nenhum dado é perdido. Quando `WEBHOOK_URL` for preenchida, o formulário faz um `POST` com o JSON do cadastro (incluindo UTMs, data/hora e nomes dos arquivos anexados) para essa URL. Não insira credenciais/segredos diretamente no front-end — use o webhook apenas como porta de entrada para sua automação (Make, Zapier etc.), que deve tratar autenticação do lado do servidor.
+### Google Forms (backend gratuito, já conectado)
+O formulário do site está conectado ao Google Forms **"Credenciamento — Clube do Buteco"**. Ao enviar, o site manda os dados em segundo plano (sem redirecionar nem abrir aba nova) para `CONFIG.GOOGLE_FORM_ACTION_URL` — as respostas caem automaticamente na planilha do Google Sheets vinculada ao formulário.
+
+O mapeamento de cada campo do site para a pergunta correspondente no Forms fica em `GOOGLE_FORM_FIELD_MAP` (campos de texto/múltipla escolha) e `GOOGLE_FORM_CHECKBOX_GROUPS` (perguntas de caixas de seleção), logo no início de `script.js`.
+
+Se um dia você recriar o formulário ou adicionar perguntas novas:
+1. No projeto do Apps Script (`criar-google-form.gs`), rode a função `listarEntryIds()` — ela lista o `entry.XXXXXXX` de cada pergunta.
+2. Atualize `GOOGLE_FORM_ACTION_URL` com a nova URL pública do formulário terminando em `/formResponse` (pegue a URL do formulário, algo como `.../viewform`, e troque `viewform` por `formResponse`).
+3. Atualize os IDs em `GOOGLE_FORM_FIELD_MAP`/`GOOGLE_FORM_CHECKBOX_GROUPS` com os novos valores.
+
+Como a requisição usa `mode: "no-cors"` (exigido pelo domínio do Google Forms), o site não consegue confirmar se o envio teve sucesso — ele é despachado silenciosamente. Por isso, mantenha o WhatsApp (abaixo) ativo como confirmação visível para você e redundância para o dono do bar.
+
+### Webhook / integração adicional (opcional)
+Se `WEBHOOK_URL` estiver vazio e `GOOGLE_FORM_ACTION_URL` também estiver vazio, o formulário roda em **modo demonstração**: valida tudo normalmente, simula o envio, mostra a tela de sucesso e imprime o JSON completo do cadastro no console do navegador (F12 → Console) — nenhum dado é perdido. Quando `WEBHOOK_URL` for preenchida, o formulário faz um `POST` adicional com o JSON do cadastro (incluindo UTMs, data/hora e nomes dos arquivos anexados) para essa URL — pode ser usado junto com o Google Forms, não é um ou outro. Não insira credenciais/segredos diretamente no front-end — use o webhook apenas como porta de entrada para sua automação (Make, Zapier etc.), que deve tratar autenticação do lado do servidor.
 
 ## Funcionalidades do formulário
 
