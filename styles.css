@@ -41,6 +41,10 @@
 }
 
 /* ---------- Reset básico ---------- */
+/* Garante que o atributo [hidden] sempre vença qualquer regra de "display"
+   definida mais abaixo (ex.: .btn { display: inline-flex }), que do
+   contrário teria a mesma especificidade e apareceria por cima. */
+[hidden] { display: none !important; }
 *, *::before, *::after { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
 body {

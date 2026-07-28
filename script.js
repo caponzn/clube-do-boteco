@@ -30,28 +30,24 @@ const CONFIG = {
   // WEBHOOK_URL abaixo para receber os dados por outro canal).
   SEND_TO_WHATSAPP_ON_SUBMIT: true,
 
-  // ---- Webhook para receber os cadastros do formulário ----
-  // Compatível com Make, Zapier, RD Station, HubSpot, Pipedrive,
-  // Google Sheets (via App Script) ou API própria.
-  // Se estiver vazio E o Google Forms abaixo também estiver vazio, o
-  // formulário roda em MODO DEMONSTRAÇÃO: simula o envio, mostra a tela
-  // de sucesso e registra o JSON no console.
-  WEBHOOK_URL: "",
+  // ---- Webhook para receber os cadastros do formulário (backend ativo) ----
+  // Aponta para o Apps Script "webhook-planilha.gs" publicado como Web App,
+  // que grava cada cadastro como uma linha na planilha do Google Sheets.
+  // Compatível também com Make, Zapier, RD Station, HubSpot, Pipedrive ou
+  // API própria — qualquer endpoint que aceite POST com JSON.
+  // Se estiver vazio, o formulário roda em MODO DEMONSTRAÇÃO: simula o
+  // envio, mostra a tela de sucesso e registra o JSON no console.
+  WEBHOOK_URL: "https://script.google.com/macros/s/AKfycbxSghKuKUj5peQ470uZUxrlmTfF49s6IjlXGf0iVqX0uLORlC2xd9rlEpWkOSwjj-tQPQ/exec",
 
-  // ---- Google Forms como backend gratuito do formulário ----
-  // Envia os dados em segundo plano (sem sair do site) para o Google Forms
-  // "Credenciamento". As respostas caem automaticamente na planilha do
-  // Google Sheets vinculada ao formulário.
-  // IMPORTANTE: o ID usado aqui (1MMzxS8bUb...) precisa ser exatamente o
-  // mesmo ID usado para gerar os entry.XXXXXXX com listarEntryIds() no
-  // arquivo criar-google-form.gs — se forem de formulários diferentes, os
-  // dados são enviados mas não aparecem em nenhuma planilha (a requisição
-  // usa modo "no-cors", então falha silenciosamente).
-  // Para trocar de formulário no futuro: pegue o ID na URL de edição do
-  // formulário (docs.google.com/forms/d/ESSE_ID_AQUI/edit), monte a URL
-  // https://docs.google.com/forms/d/ESSE_ID_AQUI/formResponse, e gere
-  // novos IDs de campo com listarEntryIds() usando o mesmo ID.
-  GOOGLE_FORM_ACTION_URL: "https://docs.google.com/forms/d/1MMzxS8bUb5skXof2E8poNZOgzpVJe0t0wh1P8YcKObo/formResponse",
+  // ---- Google Forms (DESATIVADO) ----
+  // O envio direto ao Google Forms por fetch em segundo plano não funciona
+  // de forma confiável: o Google exige um token antispam (fbzx) gerado
+  // apenas quando alguém abre a página real do formulário, e não existe
+  // como gerar esse token num envio silencioso feito por trás dos panos.
+  // Testado e confirmado — ver webhook-planilha.gs para a solução em uso
+  // (Apps Script Web App gravando direto na planilha, sem essa trava).
+  // Mantido aqui vazio de propósito; não preencha.
+  GOOGLE_FORM_ACTION_URL: "",
 
   // ---- Influenciador / embaixador da campanha ----
   // Preencha apenas com informações reais e validadas.
@@ -639,9 +635,14 @@ const FormWizard = {
       }
 
       if (CONFIG.WEBHOOK_URL) {
+        // Content-Type "text/plain" de propósito: evita que o navegador
+        // dispare uma checagem prévia (preflight) que o Apps Script do
+        // Google não responde corretamente, o que travaria o envio.
+        // O corpo continua sendo um JSON válido — o Apps Script lê o texto
+        // bruto e faz o JSON.parse por conta própria.
         await fetch(CONFIG.WEBHOOK_URL, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
           body: JSON.stringify(payload)
         });
         salvouEmAlgumLugar = true;
