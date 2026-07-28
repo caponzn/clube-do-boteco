@@ -40,13 +40,18 @@ const CONFIG = {
 
   // ---- Google Forms como backend gratuito do formulário ----
   // Envia os dados em segundo plano (sem sair do site) para o Google Forms
-  // "Credenciamento — Clube do Buteco". As respostas caem automaticamente
-  // na planilha do Google Sheets vinculada ao formulário.
-  // Para trocar de formulário no futuro: pegue a URL pública do formulário
-  // (algo como https://docs.google.com/forms/d/e/XXXXX/viewform), troque
-  // "viewform" por "formResponse" no fim, e gere novos IDs de campo com a
-  // função listarEntryIds() do arquivo criar-google-form.gs.
-  GOOGLE_FORM_ACTION_URL: "https://docs.google.com/forms/d/e/1FAIpQLScKCvBq1Ryd2dxotoKdCGKorD0ZckhoL1gF1tDr1zQVk9I2eg/formResponse",
+  // "Credenciamento". As respostas caem automaticamente na planilha do
+  // Google Sheets vinculada ao formulário.
+  // IMPORTANTE: o ID usado aqui (1MMzxS8bUb...) precisa ser exatamente o
+  // mesmo ID usado para gerar os entry.XXXXXXX com listarEntryIds() no
+  // arquivo criar-google-form.gs — se forem de formulários diferentes, os
+  // dados são enviados mas não aparecem em nenhuma planilha (a requisição
+  // usa modo "no-cors", então falha silenciosamente).
+  // Para trocar de formulário no futuro: pegue o ID na URL de edição do
+  // formulário (docs.google.com/forms/d/ESSE_ID_AQUI/edit), monte a URL
+  // https://docs.google.com/forms/d/ESSE_ID_AQUI/formResponse, e gere
+  // novos IDs de campo com listarEntryIds() usando o mesmo ID.
+  GOOGLE_FORM_ACTION_URL: "https://docs.google.com/forms/d/1MMzxS8bUb5skXof2E8poNZOgzpVJe0t0wh1P8YcKObo/formResponse",
 
   // ---- Influenciador / embaixador da campanha ----
   // Preencha apenas com informações reais e validadas.
